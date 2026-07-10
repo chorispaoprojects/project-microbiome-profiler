@@ -1,0 +1,26 @@
+# Raw and large data files
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Kraken2 databases (large)
+*.k2d
+*.k2m
+databases/
+
+# Common bioinformatics output clutter
+*.bam
+*.sam
+*.fastq
+*.fastq.gz
+*.fq.gz
+
+# Conda / Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS junk
+.DS_Store
+
