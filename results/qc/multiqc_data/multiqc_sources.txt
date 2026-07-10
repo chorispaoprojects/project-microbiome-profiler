@@ -1,0 +1,5 @@
+Module	Section	Sample Name	Source
+FastQC	all_sections	SRR24442552_sub_1	/home/chorispao/projects/metaflow-pipeline/results/qc/pre_trim/SRR24442552_sub_1_fastqc.zip
+FastQC	all_sections	SRR24442552_sub_1_paired	/home/chorispao/projects/metaflow-pipeline/results/qc/post_trim/SRR24442552_sub_1_paired_fastqc.zip
+FastQC	all_sections	SRR24442552_sub_2	/home/chorispao/projects/metaflow-pipeline/results/qc/pre_trim/SRR24442552_sub_2_fastqc.zip
+FastQC	all_sections	SRR24442552_sub_2_paired	/home/chorispao/projects/metaflow-pipeline/results/qc/post_trim/SRR24442552_sub_2_paired_fastqc.zip
