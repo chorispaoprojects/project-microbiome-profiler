@@ -25,3 +25,14 @@ sample name including the suffix:
 5. MAG Quality Assessment (CheckM2) — planned
 6. MAG Taxonomy (GTDB-Tk) — planned
 7. Functional Annotation (Prodigal + eggNOG-mapper) — planned
+
+
+## Progress Log
+
+### Day 1 — QC & Trimming (Dataset A)
+- Downloaded SRR24442552 (biofloc aquaculture metagenome) via SRA-tools
+- Subsampled to 500,000 read pairs (seqtk, seed 100) for fast iteration
+- Ran QC pipeline: FastQC -> Trimmomatic -> FastQC -> MultiQC
+- Results: 96.3% of read pairs survived trimming (481,741 / 500,000)
+- Zero FastQC module failures pre- or post-trim
+- Next step: taxonomic profiling with Kraken2/Bracken
