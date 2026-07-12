@@ -182,3 +182,63 @@ skill, not just a setup inconvenience.
 - `maxbin2_env` — MaxBin2 2.2.7 (isolated due to R dependency conflicts)
 - `dastool` — r-base + CRAN packages + prodigal, diamond, pullseq, ruby
   (DAS Tool itself run from cloned GitHub source, not conda-installed)
+
+**CheckM2 setup:** also required an isolated environment due to a known,
+actively-tracked conda solver conflict (checkm2 requiring a pinned
+tensorflow version with no installable providers — see
+github.com/chklovski/CheckM2/issues/141). Resolved using CheckM2's own
+maintainer-provided `checkm2.yml` environment file
+(`conda env create -n checkm2 -f checkm2.yml`) rather than a plain
+`conda install`, followed by `pip install .` from the cloned source, since
+the yml file installs dependencies only, not the CheckM2 package itself.
+ 
+**Results across all three binner outputs:**
+ 
+| Bin | Source | Completeness | Contamination | MIMAG tier |
+|---|---|---|---|---|
+| bin.1 | MetaBAT2 (raw) | 65.24% | 1.65% | Medium-quality |
+| bin.001 | MaxBin2 (raw) | 34.55% | 1.69% | Below medium-quality |
+| bin.002 | MaxBin2 (raw) | 53.61% | 0.60% | Medium-quality |
+| bin.002 | DAS Tool (refined, selected) | 53.61% | 0.60% | Medium-quality |
+ 
+**Key finding — DAS Tool's internal selection disagreed with CheckM2's
+independent assessment.** DAS Tool selected MaxBin2's bin.002 as its sole
+final output (internal SCG-based score: 0.647), excluding MetaBAT2's bin.1
+entirely. However, CheckM2 — a more recent, machine-learning-based
+completeness/contamination estimator generally considered more accurate
+than raw single-copy-gene counting — scored MetaBAT2's bin.1 as more
+complete (65.24% vs. 53.61%) with comparable contamination (1.65% vs.
+0.60%). By CheckM2's independent assessment, MetaBAT2's bin.1 would be the
+stronger MAG to report, contradicting DAS Tool's own selection.
+ 
+This discrepancy is attributed to the two tools using fundamentally
+different scoring approaches: DAS Tool's internal score is based on raw
+single-copy marker gene presence/absence counting with configurable
+penalty weights, while CheckM2 uses a gradient-boosted machine learning
+model trained on a large genome reference set. This is precisely why this
+pipeline was deliberately designed to run CheckM2 independently on every
+raw binner output, rather than trusting DAS Tool's internal selection
+without independent verification — a design decision that directly paid
+off here by surfacing a real, non-obvious disagreement between two
+legitimate quality-assessment methods.
+ 
+**Framing for this result:** the pipeline's purpose is to reliably produce
+and surface these standardized quality metrics for any input dataset, not
+to guarantee a particular biological outcome on this specific, deliberately
+small development dataset. Neither bin reaches MIMAG high-quality
+thresholds (≥90% completeness, ≤5% contamination) here, which is an
+expected consequence of the 500K read-pair subsampling depth chosen for
+fast iteration (see earlier assembly/mapping log entries) — not a defect
+in the pipeline's logic. The same pipeline, pointed at the full,
+non-subsampled dataset or run on HPC infrastructure, would be expected to
+produce substantially more complete MAGs, since assembly contiguity and
+binning resolution both scale directly with sequencing depth.
+ 
+**Next priorities (revised, per project discussion):** with the core
+analytical pipeline now functionally complete end-to-end on Dataset A,
+focus shifts to reproducibility and deployability — ensuring all setup
+scripts reliably install their dependencies (documenting the several
+isolated-environment workarounds discovered during this build as
+first-class, scripted parts of setup rather than manual tribal knowledge),
+and wrapping the full pipeline in Snakemake so it can be deployed
+plug-and-play on other systems, including HPC.
