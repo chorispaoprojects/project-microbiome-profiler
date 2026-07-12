@@ -36,3 +36,28 @@ sample name including the suffix:
 - Results: 96.3% of read pairs survived trimming (481,741 / 500,000)
 - Zero FastQC module failures pre- or post-trim
 - Next step: taxonomic profiling with Kraken2/Bracken
+
+
+### Day 2 — Taxonomic Profiling & Assembly (Dataset A)
+ 
+**Taxonomic profiling (Kraken2 + Bracken):**
+- Database: PlusPF-8 (capped at 8GB via k-mer downselection; PlusPF-16 was
+  initially attempted but exceeded available WSL2 memory on 16GB development
+  hardware — see Limitations section)
+- 96.4% of reads unclassified (464,396 / 481,741)
+- Of classified reads, dominant taxa were Rhodobacterales/Roseobacteraceae
+  (Marivita, Ruegeria, Seohaeicola, Sulfitobacter genera)
+
+**Assembly (MEGAHIT):**
+- Input: 481,741 trimmed, paired reads (500K read pair subsample)
+- Output: 8,313 contigs, 10.8 Mbp total assembled length
+- N50: 2,153 bp (1,159 contigs at N50)
+- Longest contig: 15,295 bp
+- GC content: 56.2% (consistent with 57% GC observed in raw reads —
+  no unexpected compositional bias introduced during assembly)
+- Modest N50 and contig fragmentation are expected outcomes of the
+  500K read-pair subsampling depth (chosen for fast iteration); binning
+  is expected to recover a small number of bins, primarily from the
+  more abundant, better-covered taxa
+- Next step: read-mapping/coverage generation, then multi-binner
+  approach (MetaBAT2, MaxBin2, CONCOCT) refined via DAS Tool

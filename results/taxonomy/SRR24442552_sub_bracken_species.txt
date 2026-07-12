@@ -1,0 +1,73 @@
+name	taxonomy_id	taxonomy_lvl	kraken_assigned_reads	added_reads	new_est_reads	fraction_total_reads
+Marivita sp.	2003365	S	1223	751	1974	0.16789
+Sulfitobacter faviae	1775881	S	23	72	95	0.00808
+Ruegeria sp. THAF33	2587853	S	41	48	89	0.00757
+Ruegeria sp. B32	2867020	S	29	28	57	0.00485
+Ruegeria sp. YS9	2966453	S	28	29	57	0.00485
+Roseovarius pacificus	337701	S	17	18	35	0.00298
+Roseovarius indicus	540747	S	16	26	42	0.00357
+Phaeobacter inhibens	221822	S	18	43	61	0.00519
+Leisingera thetidis	2930199	S	12	20	32	0.00272
+Salipiger profundus	1229727	S	16	32	48	0.00408
+Salipiger abyssi	1250539	S	14	26	40	0.00340
+Seohaeicola saemankumensis	481181	S	10	185	195	0.01658
+Thalassovita sp.	1979401	S	16	11	27	0.00230
+Shimia sp. W99	3453413	S	10	10	20	0.00170
+Actibacterium sp. EMB200-NS6	1609966	S	15	34	49	0.00417
+Pseudosulfitobacter pseudonitzschiae	1402135	S	10	15	25	0.00213
+Thalassobacter stenotrophicus	266809	S	14	4	18	0.00153
+Marinovum algicola	42444	S	10	13	23	0.00196
+Dinoroseobacter shibae	215813	S	10	17	27	0.00230
+Paracoccus sp. SCSIO 75233	3017782	S	10	34	44	0.00374
+Paracoccus yeei	147645	S	13	55	68	0.00578
+Paracoccus homiensis	364199	S	10	15	25	0.00213
+Paracoccus sediminicola	3017783	S	10	17	27	0.00230
+Pukyongiella litopenaei	2605946	S	81	147	228	0.01939
+Defluviimonas sp. SAOS-178_SWC	3121287	S	44	48	92	0.00782
+Pseudophaeobacter sp. TrK17	2815167	S	40	52	92	0.00782
+Nioella sp.	1912091	S	40	35	75	0.00638
+Thioclava sp. FR2	3445780	S	20	15	35	0.00298
+Thioclava nitratireducens	1915078	S	12	24	36	0.00306
+Tritonibacter mobilis	379347	S	10	28	38	0.00323
+Cereibacter azotoformans	43057	S	10	18	28	0.00238
+Marivivens sp. JLT3646	1920883	S	12	7	19	0.00162
+Rhodobacter xanthinilyticus	1850250	S	33	97	130	0.01106
+Rhodobacter capsulatus	1061	S	13	16	29	0.00247
+Methyloceanibacter caenitepidi	1384459	S	32	42	74	0.00629
+Salinarimonas sp.	2766526	S	35	155	190	0.01616
+Hyphococcus sp.	2038636	S	67	35	102	0.00867
+Hyphococcus flavus	1866326	S	14	8	22	0.00187
+Vibrio rotiferianus	190895	S	72	255	327	0.02781
+Vibrio parahaemolyticus	670	S	60	174	234	0.01990
+Catenovulum sp. SX2	3398614	S	36	12	48	0.00408
+Alkalimarinus coralli	2935863	S	27	9	36	0.00306
+Litorilituus sediminis	718192	S	12	4	16	0.00136
+Aliikangiella sp. IMCC44359	3459125	S	11	5	16	0.00136
+Woeseia oceani	1548547	S	19	4	23	0.00196
+Winogradskyella sp. MH6	2929510	S	2392	532	2924	0.24868
+Winogradskyella sp. J14-2	1936080	S	48	7	55	0.00468
+Winogradskyella sp. HB-48	3416808	S	48	8	56	0.00476
+Flagellimonas alvinocaridis	2530200	S	452	61	513	0.04363
+Flagellimonas sp.	2058762	S	71	11	82	0.00697
+Polaribacter marinivivus	1524260	S	390	136	526	0.04474
+Polaribacter huanghezhanensis	1354726	S	15	3	18	0.00153
+Tenacibaculum sp. A30	3442644	S	26	22	48	0.00408
+Maribacter litopenaei	2976127	S	19	2	21	0.00179
+Maribacter cobaltidurans	1178778	S	13	3	16	0.00136
+Mesoflavibacter sp. SCSIO 43206	2779362	S	13	19	32	0.00272
+Aquimarina macrocephali	666563	S	12	3	15	0.00128
+Phaeodactylibacter xiamenensis	1524460	S	352	22	374	0.03181
+Cyclobacterium xiamenense	1297121	S	17	3	20	0.00170
+Algoriphagus sp. NBT04N3	2705473	S	12	10	22	0.00187
+Roseivirga sp.	1964215	S	12	4	16	0.00136
+Gaopeijia maritima	3119007	S	76	33	109	0.00927
+Acanthopleuribacter pedis	442870	S	1042	199	1241	0.10555
+Sulfidibacter corallicola	2818388	S	22	4	26	0.00221
+Engelhardtia mirabilis	2528011	S	15	15	30	0.00255
+Rohdeia mirabilis	2528008	S	10	11	21	0.00179
+Candidatus Nitrospira neomarina	3020899	S	41	15	56	0.00476
+Candidatus Nitrospira allomarina	3020900	S	27	10	37	0.00315
+Nitrospira sp. Ecomares 2.1	985252	S	18	2	20	0.00170
+Mycobacterium canetti	78331	S	11	355	366	0.03113
+Candidatus Leptofilum sp.	3241576	S	17	6	23	0.00196
+Homo sapiens	9606	S	69	17	86	0.00731

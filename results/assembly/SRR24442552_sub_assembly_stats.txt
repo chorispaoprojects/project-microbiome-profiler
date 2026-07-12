@@ -1,0 +1,2 @@
+file                                               format  type  num_seqs     sum_len  min_len  avg_len  max_len   Q1   Q2     Q3  sum_gap    N50  N50_num  Q20(%)  Q30(%)  AvgQual  GC(%)  sum_n
+results/assembly/SRR24442552_sub/final.contigs.fa  FASTA   DNA      8,313  10,818,621      200  1,301.4   15,295  415  737  1,665        0  2,153    1,159       0       0        0   56.2      0
