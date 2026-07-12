@@ -25,3 +25,4 @@ __pycache__/
 .DS_Store
 
 tools/DAS_Tool/
+tools/CheckM2/
