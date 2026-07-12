@@ -119,3 +119,22 @@ current channels. Diagnosing whether a failure is a solver/environment
 conflict (fixable by isolation or pinning) versus genuine package rot
 (requiring an alternative installation route entirely) is itself a practical
 skill, not just a setup inconvenience.
+
+**Read-mapping / coverage generation (bowtie2 + samtools):**
+- Mapped trimmed reads back against the MEGAHIT assembly to generate
+  per-contig coverage depth (required input for MetaBAT2 and MaxBin2)
+- Overall alignment rate: 33.16%
+- This is likely explained by the assembly statistics
+  already logged: only ~10.8 Mbp of the ~150 Mbp of input read sequence
+  was represented in assembled contigs at this subsampling depth, so the
+  majority of reads (originating from lower-abundance community members
+  that did not assemble into contigs) do not map back to the assembly.
+  This is the same underlying limitation — insufficient sequencing depth
+  per organism at the 500K read-pair subsampling level — surfacing at a
+  different pipeline stage, following the same pattern as the low Kraken2
+  classification rate observed during taxonomic profiling.
+- Depth file generated via jgi_summarize_bam_contig_depths
+  (MetaBAT2's utility), used as shared input for both MetaBAT2 and
+  MaxBin2 binning
+- Next: run MetaBAT2 and MaxBin2 on the assembly + depth file, then
+  DAS Tool consensus refinement
