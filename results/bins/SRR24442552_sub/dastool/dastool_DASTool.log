@@ -1,0 +1,37 @@
+DAS Tool 1.1.7 
+2026-07-12 20:58:11.396652 
+
+Parameters: 
+--bins	results/bins/SRR24442552_sub/dastool/metabat2_contig2bin.tsv,results/bins/SRR24442552_sub/dastool/maxbin2_contig2bin.tsv
+--contigs	results/assembly/SRR24442552_sub/final.contigs.fa
+--outputbasename	results/bins/SRR24442552_sub/dastool/dastool
+--labels	metabat2,maxbin2
+--search_engine	diamond
+--proteins	NULL
+--write_bin_evals	FALSE
+--write_bins	TRUE
+--write_unbinned	FALSE
+--threads	4
+--score_threshold	0.5
+--duplicate_penalty	0.6
+--megabin_penalty	0.5
+--max_iter_post_threshold	10
+--dbDirectory	db
+--resume	FALSE
+--debug	FALSE
+--version	FALSE
+--help	FALSE
+
+Dependencies: 
+prodigal	/home/chorispao/miniconda3/envs/dastool/bin/prodigal
+diamond	/home/chorispao/miniconda3/envs/dastool/bin/diamond
+pullseq	/home/chorispao/miniconda3/envs/dastool/bin/pullseq
+ruby	/home/chorispao/miniconda3/envs/dastool/bin/ruby
+usearch	
+blastp	/usr/bin/blastp
+
+Analyzing assembly 
+Predicting genes 
+Annotating single copy genes using diamond 
+Dereplicating, aggregating, and scoring bins 
+Writing bins 

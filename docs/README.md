@@ -138,3 +138,47 @@ skill, not just a setup inconvenience.
   MaxBin2 binning
 - Next: run MetaBAT2 and MaxBin2 on the assembly + depth file, then
   DAS Tool consensus refinement
+
+**MaxBin2 — additional dependency issues resolved:**
+- The installed bioconda build (2.2.1) shipped only the raw `MaxBin` binary,
+  missing the `run_MaxBin.pl` wrapper script that handles marker-gene-based
+  seed detection automatically (via FragGeneScan + HMMER). Upgrading to
+  2.2.7 hit the same class of R-dependency channel rot seen with CONCOCT
+  and DAS Tool (`r-gplots`/`r-catools` pinned to unavailable R 3.2/3.3
+  builds). Resolved by installing MaxBin2 2.2.7 into its own isolated
+  `maxbin2_env` environment, which resolved cleanly.
+- Result: 2 bins recovered (bin.001, bin.002)
+**MetaBAT2 — result:**
+- 1 bin recovered: 6.5 Mbp, 2,120 contigs, N50 3,319 bp, GC 57.04%
+  (GC closely matches whole-sample GC, consistent with this representing
+  the single dominant community member identified in earlier stages)
+**DAS Tool — additional dependency issues resolved, then run successfully:**
+- Beyond the R/magrittr conda packaging issue already documented, the
+  DAS Tool wrapper itself (once running) required prodigal, diamond,
+  pullseq, and ruby as runtime dependencies, none of which were installed
+  by default in the manually-constructed `dastool` environment (since
+  DAS Tool was installed via CRAN + GitHub source, not conda, its
+  bioconda-declared dependency list was never applied). Installed all
+  four directly via conda into the `dastool` environment.
+- SCG database (db.zip) required manual extraction into a `db/`
+  subfolder to match DAS Tool's default `--dbDirectory` expectation.
+**DAS Tool — final result:**
+- Given MetaBAT2's 1 bin and MaxBin2's 2 bins as input, DAS Tool selected
+  only **one** bin for its final refined output: MaxBin2's bin.002.
+- Selected bin: 3.9 Mbp, 1,670 contigs, N50 2,583 bp
+- SCG completeness: 65%, SCG redundancy: 0%
+- MetaBAT2's bin and MaxBin2's other candidate bin were both excluded
+  from the final consensus set, implying they scored lower on DAS Tool's
+  completeness/redundancy criteria than the selected bin — a plausible,
+  explainable outcome given this pipeline's multi-binner design is
+  specifically intended to catch and discard lower-quality or
+  higher-contamination candidate bins rather than retain everything.
+- Zero SCG redundancy is a positive signal that this bin represents a
+  single coherent organism rather than a merged/contaminated cluster,
+  despite its incomplete (65%) recovery — consistent with expectations
+  given the fragmented assembly produced at this subsampling depth.
+**Environment structure for the binning stage (final):**
+- `metaflow` — bowtie2, samtools, metabat2
+- `maxbin2_env` — MaxBin2 2.2.7 (isolated due to R dependency conflicts)
+- `dastool` — r-base + CRAN packages + prodigal, diamond, pullseq, ruby
+  (DAS Tool itself run from cloned GitHub source, not conda-installed)
