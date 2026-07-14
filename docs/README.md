@@ -26,6 +26,55 @@ sample name including the suffix:
 6. MAG Taxonomy (GTDB-Tk) — planned
 7. Functional Annotation (Prodigal + eggNOG-mapper) — planned
 
+##Setup and environments **READ CAREFULLY**
+
+### Environment files
+
+Four separate conda environments are used in this pipeline, due to
+dependency conflicts between tools that could not be resolved within a
+single shared environment (see Progress Log for full details of each
+conflict and its resolution).
+
+| Environment | File | Used for | Fully reproducible from YAML alone? |
+|---|---|---|---|
+| `metaflow` | `envs/metaflow_environment.yml` | Core pipeline (QC, taxonomy, assembly, mapping, MetaBAT2) | Yes |
+| `maxbin2_env` | `envs/maxbin2_environment.yml` | MaxBin2 binning | Yes |
+| `dastool` | `envs/dastool_environment.yml` | DAS Tool bin refinement | **No** — see below |
+| `checkm2` | `envs/checkm2_environment.yml` | Bin quality assessment | **No** — see below |
+
+**`dastool` additional setup required after creating from YAML:**
+DAS Tool's R package dependencies (data.table, magrittr, docopt) were
+installed directly via CRAN inside an R session, not via conda, and are
+therefore not captured in the exported YAML. After creating the
+environment, run:
+```bash
+conda activate dastool
+R
+```
+```r
+repo <- 'http://cran.us.r-project.org'
+install.packages('data.table', repos=repo, dependencies=TRUE)
+install.packages('magrittr', repos=repo, dependencies=TRUE)
+install.packages('docopt', repos=repo, dependencies=TRUE)
+q()
+```
+DAS Tool itself is not a conda package — clone it separately via
+`scripts/setup/setup_dastool.sh`.
+
+**`checkm2` additional setup required after creating from YAML:**
+CheckM2's Python package itself is not installed by its own `checkm2.yml`
+environment file (which installs dependencies only), and needs an
+explicit `pip install .` from its cloned source after the environment is
+created:
+```bash
+conda activate checkm2
+cd tools/CheckM2
+pip install .
+```
+CheckM2's own source is not a conda package — clone it separately via
+`scripts/setup/setup_checkm2.sh`. The reference database must also be
+downloaded separately (see Setup & Reproducibility section).
+
 
 ## Progress Log
 
