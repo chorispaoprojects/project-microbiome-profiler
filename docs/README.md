@@ -75,6 +75,14 @@ CheckM2's own source is not a conda package — clone it separately via
 `scripts/setup/setup_checkm2.sh`. The reference database must also be
 downloaded separately (see Setup & Reproducibility section).
 
+## Running the Pipeline
+
+**All pipeline scripts must be run from the project root directory**
+(`metaflow-pipeline/`). Scripts use paths relative to the working
+directory for sample data and results. The only exception is references
+to externally-cloned tools (e.g., DAS Tool), which resolve relative to
+each script's own file location regardless of working directory.
+
 
 ## Progress Log
 
@@ -291,3 +299,61 @@ isolated-environment workarounds discovered during this build as
 first-class, scripted parts of setup rather than manual tribal knowledge),
 and wrapping the full pipeline in Snakemake so it can be deployed
 plug-and-play on other systems, including HPC.
+
+### Day 4 — Environment Reproducibility & Setup Script Audit
+
+**Environment YAML exports:** all four conda environments used in this
+pipeline (`metaflow`, `maxbin2_env`, `dastool`, `checkm2`) were exported to
+`envs/*.yml`. Note: `dastool_environment.yml` and `checkm2_environment.yml`
+capture conda-installed packages only — DAS Tool's required R packages
+(installed via CRAN) and CheckM2's own package (installed via `pip install
+.`) are not captured by a plain conda export and require the additional
+setup steps documented in the Setup & Reproducibility section above.
+
+**New verified setup scripts added:**
+- `setup_maxbin2_env.sh` — isolated environment creation, pinned to
+  MaxBin2 2.2.7 (required for the bundled `run_MaxBin.pl` wrapper)
+- `setup_dastool_env.sh` — r-base + CRAN package installation
+  (data.table, magrittr, docopt) scripted non-interactively via
+  `Rscript -e`, plus DAS Tool's runtime dependencies (prodigal, diamond,
+  pullseq, ruby)
+- `setup_checkm2_env.sh` — environment creation from CheckM2's own
+  `checkm2.yml`, `pip install .`, and database download, each step
+  individually idempotent (checks for existing environment/database
+  before acting)
+
+All three scripts were verified against the actual working environments
+built during troubleshooting (Day 2), confirming the scripted sequence
+exactly reproduces what was manually debugged, rather than just looking
+plausible on paper.
+
+**Hardcoded path audit:** systematically checked all pipeline scripts
+(01-05) for path assumptions that would break if run from a different
+working directory or on a different machine. Finding: only one
+issue existed, in `04_binning.sh`'s reference to the externally-cloned
+DAS Tool source (`tools/DAS_Tool/`), which was fixed to resolve relative
+to the script's own file location rather than the working directory.
+
+All other directory variables across every script (`RAW_DIR`,
+`PROCESSED_DIR`, `QC_DIR`, `TAXONOMY_DIR`, `ASSEMBLY_DIR`, `BINNING_DIR`,
+etc.) are deliberately working-directory-relative, following an explicit
+project convention: **all pipeline scripts must be run from the project
+root directory.** This is distinct from, and not a bug alongside, the
+DAS Tool fix — pipeline data paths (per-sample inputs/outputs) and tool
+installation paths (fixed, one-time locations) are different categories
+with different correct resolution strategies, and only the latter
+appeared in this codebase outside of the working-directory convention.
+
+**Design decision — setup orchestration deferred to Snakemake:**
+considered building a `setup_all.sh` master script to check/install all
+databases, environments, and cloned tools in one step (rather than
+requiring the user to run each setup script individually). Decided
+against building this in bash: Snakemake natively supports per-rule
+conda environment creation (via `--use-conda` and a `conda:` directive
+per rule) and can declare required input files/databases as prerequisites
+a rule won't run without — both of which are exactly what a hand-built
+`setup_all.sh` would otherwise reimplement, and would likely need to be
+substantially rewritten once the Snakemake wrapper is built regardless.
+This work is therefore deferred to the Snakemake implementation phase
+rather than duplicated now. Individual setup scripts remain available
+and independently idempotent in the meantime.
