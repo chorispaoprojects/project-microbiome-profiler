@@ -300,7 +300,7 @@ first-class, scripted parts of setup rather than manual tribal knowledge),
 and wrapping the full pipeline in Snakemake so it can be deployed
 plug-and-play on other systems, including HPC.
 
-### Day 4 — Environment Reproducibility & Setup Script Audit
+### Day 3 — Environment Reproducibility & Setup Script Audit
 
 **Environment YAML exports:** all four conda environments used in this
 pipeline (`metaflow`, `maxbin2_env`, `dastool`, `checkm2`) were exported to
@@ -357,3 +357,27 @@ substantially rewritten once the Snakemake wrapper is built regardless.
 This work is therefore deferred to the Snakemake implementation phase
 rather than duplicated now. Individual setup scripts remain available
 and independently idempotent in the meantime.
+
+**Multi-environment orchestration (deferred to Snakemake):** `04_binning.sh`
+currently hand-switches between three conda environments
+(`metaflow`, `maxbin2_env`, `dastool`) via repeated `conda activate` calls.
+Considered consolidating this into a shared helper script, but decided
+against it for the same reason setup orchestration was deferred (see
+above): Snakemake's own per-rule `conda:` directive (with `--use-conda`)
+natively replaces this entire pattern, activating the correct environment
+per rule automatically. Building a bash-level abstraction now would
+likely be discarded once the Snakemake wrapper is in place, so this
+pattern is left as-is in the interim.
+
+**Manual-vs-scripted setup audit — conclusion:** reviewed all remaining
+setup steps across the pipeline to identify what still requires manual
+intervention versus what can be fully scripted. Finding: after today's
+work, there is very little manual setup remaining by necessity. DAS
+Tool's previously-manual CRAN package installation is now scripted
+non-interactively (via `Rscript -e`). The only genuinely manual/optional
+step by design, rather than limitation, is HUMAnN's two-flag (setup vs.
+run) opt-in, which is intentionally not automatic (see HUMAnN design
+notes above). The GTDB-Tk database setup (not yet performed) will require
+setting the `GTDBTK_DATA_PATH` environment variable, which is trivially
+scriptable and will be included in that stage's setup script when built.
+This item is considered resolved rather than outstanding.
