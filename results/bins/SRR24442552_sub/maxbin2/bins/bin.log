@@ -11,7 +11,7 @@ Minimum contig length set to 1000.
 Reading seed list...
 Looking for seeds in sequences.
 	k141_2166 [7.163290]
-	k141_4123 [4.467910]
+	k141_2037 [4.545440]
 Get 2 seeds.
 
 Start EM process.
@@ -46,6 +46,14 @@ Iteration 28
 Iteration 29
 Iteration 30
 Iteration 31
+Iteration 32
+Iteration 33
+Iteration 34
+Iteration 35
+Iteration 36
+Iteration 37
+Iteration 38
+Iteration 39
 
 EM finishes successfully.
 
@@ -53,7 +61,7 @@ Classifying sequences based on the EM result.
 Minimum probability for binning: 0.50
 Ignoring 0 bins without any sequences.
 Number of unclassified sequences: 0 (0.00%)
-Elapsed time:  0 days 00:00:07
+Elapsed time:  0 days 00:00:10
 
 Deleting intermediate files.
 
@@ -72,5 +80,5 @@ Unbinned sequences: results/bins/SRR24442552_sub/maxbin2/bins/bin.noclass
 
 
 ========== Elapsed Time ==========
-0 hours 0 minutes and 12 seconds.
+0 hours 0 minutes and 14 seconds.
 

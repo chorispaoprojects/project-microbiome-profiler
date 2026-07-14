@@ -24,6 +24,12 @@
 
 set -euo pipefail
 
+# Resolve the project root relative to this script's own location, so
+# this works regardless of what directory it's called from
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DASTOOL_SRC="${PROJECT_ROOT}/tools/DAS_Tool"
+
 SAMPLE=$1
 
 PROCESSED_DIR="data/processed"
@@ -105,10 +111,10 @@ mkdir -p "$DASTOOL_DIR"
 # DAS Tool needs a simple contig-to-bin mapping (tsv) per binner,
 # not raw FASTA bin files directly — generate these using DAS Tool's
 # own helper script
-tools/DAS_Tool/src/Fasta_to_Contig2Bin.sh -i "$METABAT_DIR" -e fa > "${DASTOOL_DIR}/metabat2_contig2bin.tsv"
-tools/DAS_Tool/src/Fasta_to_Contig2Bin.sh -i "$MAXBIN_DIR" -e fasta > "${DASTOOL_DIR}/maxbin2_contig2bin.tsv"
+"${DASTOOL_SRC}/src/Fasta_to_Contig2Bin.sh" -i "$METABAT_DIR" -e fa > "${DASTOOL_DIR}/metabat2_contig2bin.tsv"
+"${DASTOOL_SRC}/src/Fasta_to_Contig2Bin.sh" -i "$MAXBIN_DIR" -e fasta > "${DASTOOL_DIR}/maxbin2_contig2bin.tsv"
 
-tools/DAS_Tool/DAS_Tool \
+"${DASTOOL_SRC}/DAS_Tool" \
     -i "${DASTOOL_DIR}/metabat2_contig2bin.tsv,${DASTOOL_DIR}/maxbin2_contig2bin.tsv" \
     -l metabat2,maxbin2 \
     -c "$CONTIGS" \
