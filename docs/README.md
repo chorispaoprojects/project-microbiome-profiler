@@ -1,4 +1,4 @@
-# Metagenomics Pipeline
+# Microbiome Profiler 
 
 A plug-and-play shotgun metagenomics pipeline for taxonomic profiling, assembly,
 metagenome-assembled genome (MAG) reconstruction, and functional annotation of
