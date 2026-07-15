@@ -1,10 +1,18 @@
 # Metagenomics Pipeline
 
-A plug-and-play shotgun metagenomics pipeline for taxonomic profiling, assembly, 
-metagenome-assembled genome (MAG) reconstruction, and functional annotation.
+A plug-and-play shotgun metagenomics pipeline for taxonomic profiling, assembly,
+metagenome-assembled genome (MAG) reconstruction, and functional annotation of
+microbial community sequencing data.
+
+For the detailed day-by-day development history, troubleshooting log, and
+results as they were obtained, see [PROGRESS_LOG.md](PROGRESS_LOG.md).
+
+---
 
 ## Data Naming Convention
-Raw and processed FASTQ files follow the pattern `<sample_name>_1.fastq.gz` / `<sample_name>_2.fastq.gz`.
+
+Raw and processed FASTQ files follow the pattern `<sample_name>_1.fastq.gz` /
+`<sample_name>_2.fastq.gz`.
 
 Subsampled datasets (used during development/testing) are suffixed with `_sub`,
 e.g. `SRR24442552_sub_1.fastq.gz`. When running pipeline scripts, pass the full
@@ -13,26 +21,29 @@ sample name including the suffix:
     bash scripts/01_qc.sh SRR24442552_sub
 
 ## Datasets
-- **Dataset A (development):** SRR24442552 — biofloc aquaculture metagenome 
+
+- **Dataset A (development):** SRR24442552 — biofloc aquaculture metagenome
   (subsampled to 500,000 read pairs via seqtk, seed 100)
-- **Dataset B (validation):** TBD — planned marine/sea-ice associated microbiome
+- **Dataset B (validation):** TBD — planned marine/sea-ice associated microbiome or clinical dataset where community members might be better represented in databases
 
 ## Pipeline Stages
+
 1. QC & Trimming (FastQC, Trimmomatic, MultiQC)
-2. Taxonomic Profiling (Kraken2, Bracken) — planned
-3. Assembly (MEGAHIT) — planned
-4. Binning (MetaBAT2) — planned
-5. MAG Quality Assessment (CheckM2) — planned
-6. MAG Taxonomy (GTDB-Tk) — planned
+2. Taxonomic Profiling (Kraken2, Bracken)
+3. Assembly (MEGAHIT)
+4. Binning (MetaBAT2, MaxBin2, refined via DAS Tool — CONCOCT evaluated and excluded, see Progress Log)
+5. MAG Quality Assessment (CheckM2)
+6. MAG Taxonomy (GTDB-Tk) — script written and integrated, not executed (see Limitations)
 7. Functional Annotation (Prodigal + eggNOG-mapper) — planned
+8. Optional: read-based functional profiling (HUMAnN) — planned opt-in module, see below
 
-##Setup and environments **READ CAREFULLY**
+---
 
-### Environment files
+## Setup and Environments — READ CAREFULLY
 
-Four separate conda environments are used in this pipeline, due to
-dependency conflicts between tools that could not be resolved within a
-single shared environment (see Progress Log for full details of each
+Four separate conda environments are used in this pipeline, due to dependency
+conflicts between tools that could not be resolved within a single shared
+environment (see [PROGRESS_LOG.md](PROGRESS_LOG.md) for full details of each
 conflict and its resolution).
 
 | Environment | File | Used for | Fully reproducible from YAML alone? |
@@ -41,343 +52,221 @@ conflict and its resolution).
 | `maxbin2_env` | `envs/maxbin2_environment.yml` | MaxBin2 binning | Yes |
 | `dastool` | `envs/dastool_environment.yml` | DAS Tool bin refinement | **No** — see below |
 | `checkm2` | `envs/checkm2_environment.yml` | Bin quality assessment | **No** — see below |
+| `gtdbtk` | (created via setup script) | MAG taxonomy (not executed — see Limitations) | Yes |
 
 **`dastool` additional setup required after creating from YAML:**
-DAS Tool's R package dependencies (data.table, magrittr, docopt) were
-installed directly via CRAN inside an R session, not via conda, and are
-therefore not captured in the exported YAML. After creating the
-environment, run:
+DAS Tool's R package dependencies (data.table, magrittr, docopt) are installed
+directly via CRAN, not via conda, and are therefore not captured in the
+exported YAML. Run `scripts/setup/setup_dastool_env.sh` to reproduce this
+fully (scripted non-interactively), or manually:
 ```bash
 conda activate dastool
-R
-```
-```r
-repo <- 'http://cran.us.r-project.org'
-install.packages('data.table', repos=repo, dependencies=TRUE)
-install.packages('magrittr', repos=repo, dependencies=TRUE)
-install.packages('docopt', repos=repo, dependencies=TRUE)
-q()
+Rscript -e "install.packages('data.table', repos='http://cran.us.r-project.org')"
+Rscript -e "install.packages('magrittr', repos='http://cran.us.r-project.org')"
+Rscript -e "install.packages('docopt', repos='http://cran.us.r-project.org')"
 ```
 DAS Tool itself is not a conda package — clone it separately via
 `scripts/setup/setup_dastool.sh`.
 
 **`checkm2` additional setup required after creating from YAML:**
 CheckM2's Python package itself is not installed by its own `checkm2.yml`
-environment file (which installs dependencies only), and needs an
-explicit `pip install .` from its cloned source after the environment is
-created:
+environment file (dependencies only), and needs an explicit `pip install .`
+from its cloned source. Run `scripts/setup/setup_checkm2_env.sh` to reproduce
+this fully, or manually:
 ```bash
 conda activate checkm2
 cd tools/CheckM2
 pip install .
 ```
 CheckM2's own source is not a conda package — clone it separately via
-`scripts/setup/setup_checkm2.sh`. The reference database must also be
-downloaded separately (see Setup & Reproducibility section).
+`scripts/setup/setup_checkm2.sh`. The reference database is downloaded
+automatically by `setup_checkm2_env.sh`.
+
+**`gtdbtk` setup:** run `scripts/setup/setup_gtdbtk_env.sh`, which creates the
+environment and downloads the ~98GB reference database using GTDB-Tk's own
+bundled `download-db.sh`. See Limitations below before running this — the
+database and classification step both carry substantial resource requirements.
+
+---
 
 ## Running the Pipeline
 
 **All pipeline scripts must be run from the project root directory**
-(`metaflow-pipeline/`). Scripts use paths relative to the working
-directory for sample data and results. The only exception is references
-to externally-cloned tools (e.g., DAS Tool), which resolve relative to
-each script's own file location regardless of working directory.
+(`metaflow-pipeline/`). Scripts use paths relative to the working directory
+for sample data and results. The only exception is references to
+externally-cloned tools (e.g., DAS Tool), which resolve relative to each
+script's own file location regardless of working directory.
 
+```bash
+cd metaflow-pipeline
+bash scripts/01_qc.sh <sample_name>
+bash scripts/02_taxonomy.sh <sample_name> <path_to_kraken_db>
+bash scripts/03_assembly.sh <sample_name>
+bash scripts/04_binning.sh <sample_name>
+bash scripts/05_checkm2.sh <sample_name>
+bash scripts/06_gtdbtk.sh <sample_name>   # see Limitations — resource-intensive, not run in this project
+```
 
-## Progress Log
+---
 
-### Day 1 — QC & Trimming (Dataset A)
-- Downloaded SRR24442552 (biofloc aquaculture metagenome) via SRA-tools
-- Subsampled to 500,000 read pairs (seqtk, seed 100) for fast iteration
-- Ran QC pipeline: FastQC -> Trimmomatic -> FastQC -> MultiQC
-- Results: 96.3% of read pairs survived trimming (481,741 / 500,000)
-- Zero FastQC module failures pre- or post-trim
-- Next step: taxonomic profiling with Kraken2/Bracken
+## Repository Structure
 
+```
+metaflow-pipeline/
+├── data/
+│   ├── raw/              # Original/downloaded sequencing reads (gitignored)
+│   └── processed/        # QC'd, trimmed reads (gitignored)
+├── databases/             # Reference databases (gitignored)
+├── tools/                 # Externally-cloned tools not available as conda packages (gitignored)
+│   ├── DAS_Tool/
+│   └── CheckM2/
+├── results/
+│   ├── qc/
+│   ├── taxonomy/
+│   ├── assembly/
+│   ├── bins/
+│   └── annotation/
+├── scripts/
+│   ├── 01_qc.sh
+│   ├── 02_taxonomy.sh
+│   ├── 03_assembly.sh
+│   ├── 04_binning.sh
+│   ├── 05_checkm2.sh
+│   ├── 06_gtdbtk.sh
+│   └── setup/
+│       ├── setup_kraken_db.sh
+│       ├── setup_humann_db.sh
+│       ├── setup_dastool.sh
+│       ├── setup_dastool_env.sh
+│       ├── setup_checkm2.sh
+│       ├── setup_checkm2_env.sh
+│       ├── setup_maxbin2_env.sh
+│       └── setup_gtdbtk_env.sh
+├── envs/
+│   ├── metaflow_environment.yml
+│   ├── maxbin2_environment.yml
+│   ├── dastool_environment.yml
+│   └── checkm2_environment.yml
+├── docs/
+│   ├── README.md (this file)
+│   └── PROGRESS_LOG.md
+└── notebooks/
+    └── results_summary.ipynb
+```
 
-### Day 2 — Taxonomic Profiling & Assembly (Dataset A)
- 
-**Taxonomic profiling (Kraken2 + Bracken):**
-- Database: PlusPF-8 (capped at 8GB via k-mer downselection; PlusPF-16 was
-  initially attempted but exceeded available WSL2 memory on 16GB development
-  hardware — see Limitations section)
-- 96.4% of reads unclassified (464,396 / 481,741)
-- Of classified reads, dominant taxa were Rhodobacterales/Roseobacteraceae
-  (Marivita, Ruegeria, Seohaeicola, Sulfitobacter genera)
+---
 
-**Assembly (MEGAHIT):**
-- Input: 481,741 trimmed, paired reads (500K read pair subsample)
-- Output: 8,313 contigs, 10.8 Mbp total assembled length
-- N50: 2,153 bp (1,159 contigs at N50)
-- Longest contig: 15,295 bp
-- GC content: 56.2% (consistent with 57% GC observed in raw reads —
-  no unexpected compositional bias introduced during assembly)
-- Modest N50 and contig fragmentation are expected outcomes of the
-  500K read-pair subsampling depth (chosen for fast iteration); binning
-  is expected to recover a small number of bins, primarily from the
-  more abundant, better-covered taxa
-- Next step: read-mapping/coverage generation, then multi-binner
-  approach (MetaBAT2, MaxBin2, CONCOCT) refined via DAS Tool
+## Design Rationale
 
+### Why this stage order and tool selection
 
-**Binning tool selection:** originally planned to use a three-binner ensemble
-(MetaBAT2, MaxBin2, CONCOCT) refined via DAS Tool. This was revised during
-setup due to genuine package-level dependency issues, detailed below.
- 
-**MetaBAT2 + MaxBin2 (+ bowtie2, samtools for read-mapping):** installed
-cleanly into the `metaflow` environment via conda, no issues.
- 
-**CONCOCT — dropped from the pipeline.** CONCOCT's bioconda package has not
-been updated since 2019 and is pinned to dependency versions (specifically
-`openblas >=0.3.5,<0.3.6.0a0`) that no longer exist on current conda
-channels. This was confirmed to be a genuine channel/packaging issue rather
-than an environment conflict: the same error occurred both inside the main
-`metaflow` environment and inside a freshly created, isolated environment
-targeting an older Python version. Attempts with `mamba` as an alternative
-solver and explicit version pinning (`concoct=1.1.0`) also failed. CONCOCT
-was excluded from the binning ensemble as a result.
- 
-This is also consistent with a separate, independent limitation identified
-earlier in pipeline design: CONCOCT's clustering approach is optimized for
-multi-sample coverage profiles, and its practical value on this project's
-single-sample dataset was already expected to be reduced. The packaging
-failure reinforces, rather than contradicts, the decision to proceed without
-it at this stage.
- 
-**DAS Tool — installed via a non-conda workaround.** DAS Tool's bioconda
-package also failed to resolve, due to a pinned R dependency
-(`r-magrittr >=2.0.1`) conflicting with other available package versions.
-Pinning to the specific R version DAS Tool's recipe targets (R 4.1) was
-attempted and failed for an unrelated reason: r-base 4.1's own dependency
-chain (`libtiff`/`libdeflate`) has also bit-rotted on current conda channels.
- 
-Resolution: installed a current (unpinned) version of r-base via conda into
-a dedicated `dastool` environment, then installed DAS Tool's three required
-R packages (`data.table`, `magrittr`, `docopt`) directly from CRAN inside an
-R session, bypassing the broken conda recipe entirely. DAS Tool itself was
-then obtained directly from its GitHub source
-(github.com/cmks/DAS_Tool) rather than as a conda package, and runs as a
-script from that cloned directory.
- 
-**Resulting environment structure for the binning stage:**
-- `metaflow` — bowtie2, samtools, metabat2, maxbin2 (read-mapping + binning)
-- `dastool` — r-base + CRAN packages, used only for DAS Tool bin refinement
-- DAS Tool source: `tools/DAS_Tool/` (cloned from GitHub, not conda-installed)
-This required scripts/04_binning.sh to activate different conda environments
-for different steps within the same pipeline stage, rather than running
-entirely within `metaflow` as earlier stages did.
- 
-**Why this is documented in detail:** both CONCOCT and DAS Tool's conda
-packages failing for genuinely different underlying reasons, in the same
-pipeline stage, is a useful illustration of a common real-world bioinformatics
-problem — older or less-actively-maintained tools can have conda packaging
-that decays over time as their pinned dependencies age out of availability on
-current channels. Diagnosing whether a failure is a solver/environment
-conflict (fixable by isolation or pinning) versus genuine package rot
-(requiring an alternative installation route entirely) is itself a practical
-skill, not just a setup inconvenience.
+**QC before anything else.** Sequencing artifacts (adapter contamination,
+low-quality base calls) propagate into every downstream step if not removed
+first. Assembly in particular is highly sensitive to input read quality.
 
-**Read-mapping / coverage generation (bowtie2 + samtools):**
-- Mapped trimmed reads back against the MEGAHIT assembly to generate
-  per-contig coverage depth (required input for MetaBAT2 and MaxBin2)
-- Overall alignment rate: 33.16%
-- This is likely explained by the assembly statistics
-  already logged: only ~10.8 Mbp of the ~150 Mbp of input read sequence
-  was represented in assembled contigs at this subsampling depth, so the
-  majority of reads (originating from lower-abundance community members
-  that did not assemble into contigs) do not map back to the assembly.
-  This is the same underlying limitation — insufficient sequencing depth
-  per organism at the 500K read-pair subsampling level — surfacing at a
-  different pipeline stage, following the same pattern as the low Kraken2
-  classification rate observed during taxonomic profiling.
-- Depth file generated via jgi_summarize_bam_contig_depths
-  (MetaBAT2's utility), used as shared input for both MetaBAT2 and
-  MaxBin2 binning
-- Next: run MetaBAT2 and MaxBin2 on the assembly + depth file, then
-  DAS Tool consensus refinement
+**Taxonomic profiling (Kraken2/Bracken) before assembly.** Read-based
+classification is computationally cheap and gives an immediate community
+overview, used as a sanity check before committing to the much more
+expensive assembly step, and as an independent cross-validation against MAG
+taxonomy assigned later.
 
-**MaxBin2 — additional dependency issues resolved:**
-- The installed bioconda build (2.2.1) shipped only the raw `MaxBin` binary,
-  missing the `run_MaxBin.pl` wrapper script that handles marker-gene-based
-  seed detection automatically (via FragGeneScan + HMMER). Upgrading to
-  2.2.7 hit the same class of R-dependency channel rot seen with CONCOCT
-  and DAS Tool (`r-gplots`/`r-catools` pinned to unavailable R 3.2/3.3
-  builds). Resolved by installing MaxBin2 2.2.7 into its own isolated
-  `maxbin2_env` environment, which resolved cleanly.
-- Result: 2 bins recovered (bin.001, bin.002)
-**MetaBAT2 — result:**
-- 1 bin recovered: 6.5 Mbp, 2,120 contigs, N50 3,319 bp, GC 57.04%
-  (GC closely matches whole-sample GC, consistent with this representing
-  the single dominant community member identified in earlier stages)
-**DAS Tool — additional dependency issues resolved, then run successfully:**
-- Beyond the R/magrittr conda packaging issue already documented, the
-  DAS Tool wrapper itself (once running) required prodigal, diamond,
-  pullseq, and ruby as runtime dependencies, none of which were installed
-  by default in the manually-constructed `dastool` environment (since
-  DAS Tool was installed via CRAN + GitHub source, not conda, its
-  bioconda-declared dependency list was never applied). Installed all
-  four directly via conda into the `dastool` environment.
-- SCG database (db.zip) required manual extraction into a `db/`
-  subfolder to match DAS Tool's default `--dbDirectory` expectation.
-**DAS Tool — final result:**
-- Given MetaBAT2's 1 bin and MaxBin2's 2 bins as input, DAS Tool selected
-  only **one** bin for its final refined output: MaxBin2's bin.002.
-- Selected bin: 3.9 Mbp, 1,670 contigs, N50 2,583 bp
-- SCG completeness: 65%, SCG redundancy: 0%
-- MetaBAT2's bin and MaxBin2's other candidate bin were both excluded
-  from the final consensus set, implying they scored lower on DAS Tool's
-  completeness/redundancy criteria than the selected bin — a plausible,
-  explainable outcome given this pipeline's multi-binner design is
-  specifically intended to catch and discard lower-quality or
-  higher-contamination candidate bins rather than retain everything.
-- Zero SCG redundancy is a positive signal that this bin represents a
-  single coherent organism rather than a merged/contaminated cluster,
-  despite its incomplete (65%) recovery — consistent with expectations
-  given the fragmented assembly produced at this subsampling depth.
-**Environment structure for the binning stage (final):**
-- `metaflow` — bowtie2, samtools, metabat2
-- `maxbin2_env` — MaxBin2 2.2.7 (isolated due to R dependency conflicts)
-- `dastool` — r-base + CRAN packages + prodigal, diamond, pullseq, ruby
-  (DAS Tool itself run from cloned GitHub source, not conda-installed)
+**MEGAHIT for assembly.** This project is built around short-read Illumina data, for which de Bruijn
+graph assemblers like MEGAHIT or metaSPAdes are the preferred tool class.
+MEGAHIT was chosen over metaSPAdes specifically for its lower memory
+footprint, appropriate for laptop-scale development; metaSPAdes would be the
+natural upgrade on HPC resources for better assembly contiguity. No
+polishing step (e.g. Medaka) is required, since polishing addresses
+long-read basecalling errors that don't apply to Illumina short-read data. 
+A long-read assembler like Flye can easily be swapped into the pipeline.
 
-**CheckM2 setup:** also required an isolated environment due to a known,
-actively-tracked conda solver conflict (checkm2 requiring a pinned
-tensorflow version with no installable providers — see
-github.com/chklovski/CheckM2/issues/141). Resolved using CheckM2's own
-maintainer-provided `checkm2.yml` environment file
-(`conda env create -n checkm2 -f checkm2.yml`) rather than a plain
-`conda install`, followed by `pip install .` from the cloned source, since
-the yml file installs dependencies only, not the CheckM2 package itself.
- 
-**Results across all three binner outputs:**
- 
-| Bin | Source | Completeness | Contamination | MIMAG tier |
-|---|---|---|---|---|
-| bin.1 | MetaBAT2 (raw) | 65.24% | 1.65% | Medium-quality |
-| bin.001 | MaxBin2 (raw) | 34.55% | 1.69% | Below medium-quality |
-| bin.002 | MaxBin2 (raw) | 53.61% | 0.60% | Medium-quality |
-| bin.002 | DAS Tool (refined, selected) | 53.61% | 0.60% | Medium-quality |
- 
-**Key finding — DAS Tool's internal selection disagreed with CheckM2's
-independent assessment.** DAS Tool selected MaxBin2's bin.002 as its sole
-final output (internal SCG-based score: 0.647), excluding MetaBAT2's bin.1
-entirely. However, CheckM2 — a more recent, machine-learning-based
-completeness/contamination estimator generally considered more accurate
-than raw single-copy-gene counting — scored MetaBAT2's bin.1 as more
-complete (65.24% vs. 53.61%) with comparable contamination (1.65% vs.
-0.60%). By CheckM2's independent assessment, MetaBAT2's bin.1 would be the
-stronger MAG to report, contradicting DAS Tool's own selection.
- 
-This discrepancy is attributed to the two tools using fundamentally
-different scoring approaches: DAS Tool's internal score is based on raw
-single-copy marker gene presence/absence counting with configurable
-penalty weights, while CheckM2 uses a gradient-boosted machine learning
-model trained on a large genome reference set. This is precisely why this
-pipeline was deliberately designed to run CheckM2 independently on every
-raw binner output, rather than trusting DAS Tool's internal selection
-without independent verification — a design decision that directly paid
-off here by surfacing a real, non-obvious disagreement between two
-legitimate quality-assessment methods.
- 
-**Framing for this result:** the pipeline's purpose is to reliably produce
-and surface these standardized quality metrics for any input dataset, not
-to guarantee a particular biological outcome on this specific, deliberately
-small development dataset. Neither bin reaches MIMAG high-quality
-thresholds (≥90% completeness, ≤5% contamination) here, which is an
-expected consequence of the 500K read-pair subsampling depth chosen for
-fast iteration (see earlier assembly/mapping log entries) — not a defect
-in the pipeline's logic. The same pipeline, pointed at the full,
-non-subsampled dataset or run on HPC infrastructure, would be expected to
-produce substantially more complete MAGs, since assembly contiguity and
-binning resolution both scale directly with sequencing depth.
- 
-**Next priorities (revised, per project discussion):** with the core
-analytical pipeline now functionally complete end-to-end on Dataset A,
-focus shifts to reproducibility and deployability — ensuring all setup
-scripts reliably install their dependencies (documenting the several
-isolated-environment workarounds discovered during this build as
-first-class, scripted parts of setup rather than manual tribal knowledge),
-and wrapping the full pipeline in Snakemake so it can be deployed
-plug-and-play on other systems, including HPC.
+**Multi-binner ensemble (MetaBAT2 + MaxBin2) refined via DAS Tool.**
+Different binners weight tetranucleotide composition and coverage depth
+differently and can recover different genomes from the same assembly. DAS
+Tool combines multiple binners' outputs and selects the highest-scoring,
+non-redundant bin set. CONCOCT was evaluated and excluded — see
+[PROGRESS_LOG.md](PROGRESS_LOG.md) for the packaging issue and the
+independent, pre-existing limitation (CONCOCT's clustering approach favors
+multi-sample coverage profiles, which this single-sample project does not
+have).
 
-### Day 3 — Environment Reproducibility & Setup Script Audit
+**CheckM2 run independently on every raw binner output, not just the final
+DAS Tool-refined set.** see the Results Summary below for how this surfaced a
+disagreement between DAS Tool's internal bin selection and CheckM2's
+independent quality assessment.
 
-**Environment YAML exports:** all four conda environments used in this
-pipeline (`metaflow`, `maxbin2_env`, `dastool`, `checkm2`) were exported to
-`envs/*.yml`. Note: `dastool_environment.yml` and `checkm2_environment.yml`
-capture conda-installed packages only — DAS Tool's required R packages
-(installed via CRAN) and CheckM2's own package (installed via `pip install
-.`) are not captured by a plain conda export and require the additional
-setup steps documented in the Setup & Reproducibility section above.
+**Multi-sample-aware script design.** `03_assembly.sh` and `04_binning.sh`
+are structured to accept a sample list and support (in principle) both
+individual and co-assembly modes, even though this project runs a single
+sample. This is intended to make future multi-sample analysis (e.g.,
+multiple biofloc tank replicates or timepoints) a configuration change
+rather than a script rewrite. See PROGRESS_LOG.md for the full discussion of
+why multi-sample coverage improves binning resolution.
 
-**New verified setup scripts added:**
-- `setup_maxbin2_env.sh` — isolated environment creation, pinned to
-  MaxBin2 2.2.7 (required for the bundled `run_MaxBin.pl` wrapper)
-- `setup_dastool_env.sh` — r-base + CRAN package installation
-  (data.table, magrittr, docopt) scripted non-interactively via
-  `Rscript -e`, plus DAS Tool's runtime dependencies (prodigal, diamond,
-  pullseq, ruby)
-- `setup_checkm2_env.sh` — environment creation from CheckM2's own
-  `checkm2.yml`, `pip install .`, and database download, each step
-  individually idempotent (checks for existing environment/database
-  before acting)
+**Read-based and assembly-based analysis as parallel branches, not one
+linear chain.** Kraken2/Bracken (read-based) and the assembly→binning→
+annotation chain answer different questions and have different resource
+profiles; assembly-based analysis can discover novel organisms not in any
+reference database, while read-based analysis retains some signal even for
+organisms too low-abundance to assemble. HUMAnN (optional, see below) adds
+read-based functional profiling to complement Kraken2/Bracken's read-based
+taxonomic profiling.
 
-All three scripts were verified against the actual working environments
-built during troubleshooting (Day 2), confirming the scripted sequence
-exactly reproduces what was manually debugged, rather than just looking
-plausible on paper.
+### Optional module: HUMAnN (read-based functional profiling)
 
-**Hardcoded path audit:** systematically checked all pipeline scripts
-(01-05) for path assumptions that would break if run from a different
-working directory or on a different machine. Finding: only one
-issue existed, in `04_binning.sh`'s reference to the externally-cloned
-DAS Tool source (`tools/DAS_Tool/`), which was fixed to resolve relative
-to the script's own file location rather than the working directory.
+Kraken2/Bracken provide read-based taxonomy; HUMAnN adds read-based
+functional profiling (gene families, pathway abundance), catching
+functional signal from organisms too rare to assemble. This is opt-in due
+to its substantial additional reference database size (ChocoPhlAn +
+UniRef90, ~35-40GB):
+- **Setup is opt-in:** `scripts/setup/setup_humann_db.sh` is never run
+  automatically; a user must deliberately choose to download HUMAnN's
+  databases.
+- **Execution is opt-in:** `scripts/02b_humann.sh` is independent of the
+  core pipeline chain; no other script depends on its output, and it is
+  never called automatically.
+- UniRef90 is used by default for better sensitivity,
+  since the setup script accepts a direct database URL and a user running
+  this deliberately would want the more sensitive, standard option.
 
-All other directory variables across every script (`RAW_DIR`,
-`PROCESSED_DIR`, `QC_DIR`, `TAXONOMY_DIR`, `ASSEMBLY_DIR`, `BINNING_DIR`,
-etc.) are deliberately working-directory-relative, following an explicit
-project convention: **all pipeline scripts must be run from the project
-root directory.** This is distinct from, and not a bug alongside, the
-DAS Tool fix — pipeline data paths (per-sample inputs/outputs) and tool
-installation paths (fixed, one-time locations) are different categories
-with different correct resolution strategies, and only the latter
-appeared in this codebase outside of the working-directory convention.
+---
 
-**Design decision — setup orchestration deferred to Snakemake:**
-considered building a `setup_all.sh` master script to check/install all
-databases, environments, and cloned tools in one step (rather than
-requiring the user to run each setup script individually). Decided
-against building this in bash: Snakemake natively supports per-rule
-conda environment creation (via `--use-conda` and a `conda:` directive
-per rule) and can declare required input files/databases as prerequisites
-a rule won't run without — both of which are exactly what a hand-built
-`setup_all.sh` would otherwise reimplement, and would likely need to be
-substantially rewritten once the Snakemake wrapper is built regardless.
-This work is therefore deferred to the Snakemake implementation phase
-rather than duplicated now. Individual setup scripts remain available
-and independently idempotent in the meantime.
+## Results Summary
 
-**Multi-environment orchestration (deferred to Snakemake):** `04_binning.sh`
-currently hand-switches between three conda environments
-(`metaflow`, `maxbin2_env`, `dastool`) via repeated `conda activate` calls.
-Considered consolidating this into a shared helper script, but decided
-against it for the same reason setup orchestration was deferred (see
-above): Snakemake's own per-rule `conda:` directive (with `--use-conda`)
-natively replaces this entire pattern, activating the correct environment
-per rule automatically. Building a bash-level abstraction now would
-likely be discarded once the Snakemake wrapper is in place, so this
-pattern is left as-is in the interim.
+See [PROGRESS_LOG.md](PROGRESS_LOG.md) for full day-by-day results,
+troubleshooting narrative, and all supporting numbers. 
+---
 
-**Manual-vs-scripted setup audit — conclusion:** reviewed all remaining
-setup steps across the pipeline to identify what still requires manual
-intervention versus what can be fully scripted. Finding: after today's
-work, there is very little manual setup remaining by necessity. DAS
-Tool's previously-manual CRAN package installation is now scripted
-non-interactively (via `Rscript -e`). The only genuinely manual/optional
-step by design, rather than limitation, is HUMAnN's two-flag (setup vs.
-run) opt-in, which is intentionally not automatic (see HUMAnN design
-notes above). The GTDB-Tk database setup (not yet performed) will require
-setting the `GTDBTK_DATA_PATH` environment variable, which is trivially
-scriptable and will be included in that stage's setup script when built.
-This item is considered resolved rather than outstanding.
+## Limitations & Notes on Scale
+
+This project was developed at laptop scale, using subsampled
+data and reduced/capped reference databases, to prioritize fast iteration.
+Consequences are documented explicitly:
+
+- **Kraken2 database (PlusPF-8, capped at 8GB):** trades classification
+  sensitivity for a memory footprint that fits 16GB development hardware.
+  PlusPF-16 was initially attempted and exceeded available memory.
+- **500,000 read-pair subsample (of ~45 million available):** sufficient to
+  demonstrate pipeline function and characterize the most abundant
+  community members, but produces a more fragmented assembly and fewer,
+  less-complete MAGs than the full dataset would.
+- **MEGAHIT over metaSPAdes:** lower memory footprint at some cost to
+  assembly contiguity.
+- **CONCOCT excluded:** unresolvable conda packaging issue (see Progress
+  Log), compounded by its reduced effectiveness on single-sample coverage
+  data even had it installed successfully.
+- **GTDB-Tk (Stage 6): script written and integrated, but not executed.**
+  GTDB-Tk's classify_wf requires ~140GB RAM (or ~35GB in split-tree mode)
+  and a ~98GB reference database . This was not reducible via a smaller 
+  pre-built database the way Kraken2 was. This is a scope decision: 
+  deferred to dedicated hardware/infrastructure rather than run on constrained
+  personal or cloud hardware for a demonstration pipeline. 
+  The setup and execution scripts are written, reviewed, and follow the project's
+  established conventions, but are untested by actual execution.
+- **Functional annotation (Stage 7): planned, not yet implemented.**
+
+---
+
+## Author
+
+Atharva Karde 
+[LinkedIn](https://www.linkedin.com/in/atharva-karde-4842252a2/)
